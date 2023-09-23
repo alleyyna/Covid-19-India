@@ -1,0 +1,352 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+#VERİ ANALİTİĞİ I - PROJE
+
+# Irmak Ezgi Aksoy - 210326355
+# Berfin Küçükoğulları - 210326163
+# Aleyna Yıldıztaş - 200326017
+# Buket Çalkan - 210326369
+# Meryem Ceren Terzi - 200326089
+
+```
+
+```{r}
+# Proje için Kaggle.com üzerinden Hindistan’daki eyaletlere göre Covid - 19 verilerini sunan “Covid - 19 India” veri seti çekilmiştik. Kullanım kolaylığı için veri setinin ismi “covid” olarak değiştirildi.
+#Kolonlar : “State”,”confirmed”,”Active”,”passive”, “dose1”, “dose2”, “dose3”, “precaution”, “total dosies”, “population” .
+```
+
+```{r}
+install.packages("factoextra")
+library("factoextra")
+library("cluster")
+
+View(covid)
+x <- covid 
+summary(x)
+
+```
+
+```{r Kayıp Gözlemlerin Çıkarılması}
+df <- x 
+is.na(df) #kayıp veri sayısı 
+ids<- which(is.na(df)) #NA indeksleri
+ids
+length(ids) #toplam kayıp gözlem sayısı
+df_new <- na.omit(df)#NA değerleri çıkarıldı
+df_new 
+nrow(df)#eski veri satır sayısı
+nrow(df_new)#yeni veri satır sayısı
+
+```
+
+```{r Normalizasyon İşlemi}
+min_max_norm <- function(x) {
+  (x - min(x)) / (max(x) - min(x)) #Normalizasyon fonksiyon haline geitirldi.
+}
+df_new <- as.data.frame(lapply(df[2:11],min_max_norm))
+summary(df_new) #df_new artık covid verisinin normalize edilmiş hali
+```
+
+
+```{r Standardizasyon İşlemi}
+standardize = function(df) {
+  df_new <- (df- mean(df)) / sd(df)
+  return(df_new) #Standardize işlemi fonksiyon haline getiridi ve df_new e dönüştürüldü.
+}
+df_new <- as.data.frame(apply(df[2:10],2,standardize))
+df_new #df_new artık covid veri setinin standardize ve normalize edilmiş hali.
+
+```
+
+```{r}
+summary(df) #kolonların ortalama,medyan, 1-3. kartiller, min max değerleri görüntülendi
+head(df)
+str(df) #veri tipi bilgileri görüntülendi : state kolonu karakter
+```
+
+```{r Kolon Veri Tipi Değişimi }
+df$state= as.numeric(as.factor(df$state)) #state kolonu numeric hale getirildi.
+df 
+str(df)
+```
+
+```{r HİSTOGRAM GRAFİĞİ }
+
+hist(df$active)
+hist(df$active,
+     main="Covid -19 Pozitif Histogram Grafiği",
+     xlab="Değerler",
+     ylab="Frekans Değerleri",
+     col="pink", 
+     breaks=150,
+     xlim=c(0,1400))
+   
+```
+
+```{r HİSTOGRAM GRAFİĞİ }
+hist(df$deaths,
+     main="Covid - 19 Ölü Yoğunluk Eğrisi",
+     xlab="Değerler",
+     ylab="Yoğunluk Probs",
+     prob=T,  #yoğunluk grafiği için verileri frekanstan yoğunluk verisine çeviriyoruz.
+     col="blue")
+    lines(density(df$deaths, adjust=2))
+    
+
+```
+
+```{r HİSTOGRAM YOĞUNLUK GRAFİĞİ }
+hist(df$passive,
+     main="Covdid - 19 Negatif Yoğunluk Eğrisi",
+     xlab="Değerler",
+     ylab="Yoğunluk Probs",
+     prob=T,
+     col="pink")
+     lines(density(df$passive , adjust=2),
+     col="purple", lwd=3, lty="twodash")     
+     
+
+```
+
+```{r SAÇILIM DİYAGRAMI }
+plot(df$active) 
+plot(df$passive, bty="L") 
+plot(df$deaths, pch=2) #üçgen şeklinde
+plot(df$dose1, pch="+")
+plot(df$dose2, pch="+", type="h") #histogram şeklinde
+plot(df$dose3, pch="b", type="o") #çizgili noktalar
+plot(df$precaution_dose, pch="+", type="s")
+
+```
+
+```{r Saçılım Diyagramı}
+plot(df$deaths, df$active,
+     pch=19, bty="L",
+     main="Covid -19 Pozitif Saçılım Diyagramı",
+     xlab="active Değerleri",
+     ylab="deats Değerleri",
+     col="purple"
+)   
+
+```
+
+```{r ÜLKELRE GÖRE RENKLENDİRME}
+plot(x= df$state,
+     y= df$passive, #Ülkelere göre Covid - 19 negatif oranı 
+     pch=19, bty="L",
+     main="Covid - 19 Ülkelere Göre Negatif ",
+     xlab="Ülkeler",
+     ylab="Negatif Değerleri",
+     col=c("orange","blue","pink","gray","green","black","yellow","purple","brown","darkblue","red","slateblue","powderblue","deeppink","darkred","hotpink","plum","oldlace","bisque","lavender","azure","mediumblue","skyblue","seagreen","khaki","gold","rosybrown","indianred","indianred2","firebrick1","deeppink3","lightpink4","palegreen3","aquamarine","cyan","khaki3"))
+```
+
+```{r }
+
+plot(df$state, df$population,
+     pch=20, bty="L",
+    
+     main="Saçılım Grafiği ve Renkler",
+     xlab="Deaths Değerleri",
+     ylab="Active Değerleri",
+    
+     col=c("#00cec9","blue","pink","gray","green","black","yellow","purple","brown","red","darkblue","slateblue","powderblue","deeppink","darkred","hotpink","plum","oldlace","bisque","lavender","azure","mediumblue","skyblue","seagreen","khaki","gold","rosybrown","indianred","indianred2","firebrick1","deeppink3","lightpink4","palegreen3","aquamarine","cyan","khaki3")[as.factor(df$active)]
+)
+legend(x="topright",ncol=TRUE, legend=levels(as.factor(df$active)),
+                      col=c("#00cec9","blue","pink","gray","green","black","yellow","purple","brown","red","darkblue","slateblue","powderblue","deeppink","darkred","hotpink","plum","oldlace","bisque","lavender","azure","mediumblue","skyblue","seagreen","khaki","gold","rosybrown","indianred","indianred2","firebrick1","deeppink3","lightpink4","palegreen3","aquamarine","cyan","khaki3"),
+                       pch=7,
+                       horiz=TRUE,
+                       xjust=-0.7,
+                       yjust=-0.8,
+                       cex=0.3) 
+                       #legend konumu değişikliği
+                      
+                  
+```
+```{r}
+plot(df$state, df$dose3,
+     pch=20, bty="L",
+    
+     main="Covid -19 Ülkelere Göre Doz 3",
+     xlab="Ülkelerin Numeric Değerleri",
+     ylab="Doz 3 Değerleri",
+    
+     col=c("#00cec9","blue","pink","gray","green","black","yellow","purple","brown","red","darkblue","slateblue","powderblue","deeppink","darkred","hotpink","plum","oldlace","bisque","lavender","azure","mediumblue","skyblue","seagreen","khaki","gold","rosybrown","indianred","indianred2","firebrick1","deeppink3","lightpink4","palegreen3","aquamarine","cyan","khaki3")[as.factor(df$state)]
+)
+legend(x="topright",ncol=TRUE, legend=levels(as.factor(df$state)),
+                      col=c("#00cec9","blue","pink","gray","green","black","yellow","purple","brown","red","darkblue","slateblue","powderblue","deeppink","darkred","hotpink","plum","oldlace","bisque","lavender","azure","mediumblue","skyblue","seagreen","khaki","gold","rosybrown","indianred","indianred2","firebrick1","deeppink3","lightpink4","palegreen3","aquamarine","cyan","khaki3"),
+                       pch=7,
+                       horiz=TRUE,
+                       xjust=-0.7,
+                       yjust=-0.8,
+                       cex=0.3) 
+                       #legend konumu değişikliği
+```
+
+
+```{r YIĞIN BAR GRAFİKLERİ}
+table(df$active)  
+height<- table(df$active) #height: barların yüksekliği
+barplot(height, names.arg=c("1 ", "2", "3","4", "5", "6","7", "8", "9 ","10 ", "11 ", "12 ","13 ", "14 ", "15 ","16 ", "17 ", "18 ","19 ", "20 ", "21 ","22 ", "23 ", "24 "),
+        main = "Covid - 19 Pozitif Yığın Bar Grafiği",
+        col="pink",
+        border="purple",
+        horiz=FALSE, 
+        cex.axis=0.6,  
+        cex.names=0.6,
+        axis.lty=1
+) 
+```
+
+```{r YIĞIN BAR GRAFİKLERİ }
+table(df$deaths, df$active) 
+t<-table(df$deaths, df$active)
+barplot(t,
+        names.arg = c("1 ", "2", "3","4", "5", "6","7", "8", "9 ","10 ", "11 ", "12 ","13 ", "14 ", "15 ","16 ", "17", "18 ","19 ", "20 ", "21 ","22 ", "23 ", "24 "), 
+        axis.lty=1, 
+        main="Covid-19 Bar Grafiği",
+        xlab="Covid-19 Ölü Değerleri",
+        ylab="Covid-19 Pozitif Değerleri",
+        col=c("purple", "pink","gray"),
+        legend=c("1-50 arası", "50-100 arası ", "100-2000 "),
+        args.legend = list(bty="o", 
+                       horiz=TRUE,
+                       xjust=0.8,
+                       yjust=-0.7,
+                       cex=0.5)  
+)
+```
+
+```{r LEGEND AYARLAMALARI}
+
+table(df$deaths, df$active)  
+t<-table(df$deaths, df$active)
+par(mar=c(5.1,5.1,5.1,7), xpd=TRUE)
+barplot(t,
+        names.arg=c("1 ", "2", "3","4", "5", "6","7", "8", "9 ","10 ", "11 ", "12 ","13 ", "14 ", "15 ","16 ", "17", "18 ","19 ", "20 ", "21 ","22 ", "23 ", "24 "), #bar grafiklerine isim
+        axis.lty=1, 
+         main="Covid-19 Bar Grafiği",
+        xlab="Covid-19 Ölü Değerleri",
+        ylab="Covid-19 Pozitif Değerleri",
+        col=c("purple", "pink","gray"),
+        legend=c("1-50 arası", "50-100 arası ", "100-2000 "),
+        args.legend = list(bty="o", 
+                       horiz=TRUE,
+                       xjust=0.7,
+                       yjust=-0.7,
+                       cex=0.5)  
+)
+```
+
+```{r KUTU GRAFİĞİi }
+boxplot(df[,c("passive","precaution_dose")],
+        main="Covid - 19 Negatif ve Önlem Dozu Grafiği",
+        xlab="Değişkenler",
+        ylab="Değerler",
+        names=c("Negatif", "Önlem dozu"),
+        col=c("pink","purple"),
+        border="gray",
+        pch = 19,
+        cex.axis=0.7, 
+        range=0.5, 
+        outline=T #aykırı değerler
+)
+```
+
+```{r HEATMAP GRAFİĞİ}
+new_1<-as.matrix(df)  
+heatmap(new_1, scale="column") #değişkenleri sütunlar bazında görmek.
+heatmap(new_1, scale="column", colv=NA, Rowv=NA)
+```
+```{r RENKLENDİRİLMİŞ HEATMAP GRAFİĞİ }
+library(RColorBrewer) #renklendirmek için kütüphane aktifleştirildi
+
+heatmap(new_1, scale="column", colv=NA, Rowv=NA,
+        col=colorRampPalette(brewer.pal(9,"Blues"))(36)
+)
+legend("bottomright", legend=c("Min","Ort","Max"), 
+       fill=colorRampPalette(brewer.pal(9,"Blues"))(3)
+)
+```
+
+
+```{r PASTA GRAFİĞİ }
+
+table(df$active)
+prop.table(table(df$active))
+yüz<-prop.table(table(df$active))
+pie(yüz)
+pie(yüz,
+    main="Covid - 19 Pozitif Pasta Grafiği",
+    labels=c("1", "2", "3 ","4 ", "5 ", "6 ","7 ", "8 ", "9 ","10 ", "11", "12","13", "14", "15","16", "17", "18","19", "20", "21 ","22 ", "23", "24"),
+    col=c("#00cec9","blue","pink","gray","green","black","yellow","purple","brown","red","darkblue","slateblue","powderblue","deeppink","darkred","hotpink","plum","oldlace","bisque","lavender","azure","mediumblue","skyblue","seagreen","khaki","gold","rosybrown","indianred","indianred2","firebrick1","deeppink3","lightpink4","palegreen3","aquamarine","cyan","khaki3"),
+    init.angle = 180, 
+    clockwise=TRUE,
+    border="gray",
+    lty=3,  
+    radius=1.0)
+```
+
+
+```{r KMEANS ALGORİTMASI }
+summary(df_new)
+head(df_new)
+```
+
+
+```{r}
+#normalizasyon, standartlaştırma ve kayıp veri kontrolü çalışmanın başında yapılmıştır.
+library(factoextra)
+library(cluster)
+fviz_nbclust(df_new, kmeans, method = "wss")
+
+```
+
+
+```{r}
+fviz_nbclust(df, kmeans, method = "silhouette") # Makina en uygun k = 4 olarak buldu
+```
+```{r}
+gap_stat <- clusGap(df_new,
+                    FUN = kmeans,
+                    nstart = 25 ,
+                    K.max = 10,
+                    B = 50)
+```
+
+```{r}
+fviz_gap_stat(gap_stat)
+```
+
+```{r}
+set.seed(1) 
+```
+
+```{r}
+km <- kmeans(df_new, centers = 4, nstart = 25) # k=4 e göre kümeleme yapıldı
+km
+```
+
+```{r}
+fviz_cluster(km, data = df_new) #küme grafiği oluşturuldu.
+```
+
+```{r}
+aggregate(df_new, by=list(cluster=km$cluster), mean)
+```
+
+```{r}
+km9 <- kmeans(df_new, centers = 9, nstart = 25) # k=10 a göre kümele yapıldı.
+km9
+```
+
+```{r}
+fviz_cluster(km9, data = df_new) 
+```
+
+```{r}
+aggregate(df_new, by=list(cluster=km10$cluster), mean)
+```
+
