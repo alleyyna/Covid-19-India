@@ -2,16 +2,7 @@
 title: "R Notebook"
 output: html_notebook
 ---
-```{r}
-#VERİ ANALİTİĞİ I - PROJE
 
-# Irmak Ezgi Aksoy - 210326355
-# Berfin Küçükoğulları - 210326163
-# Aleyna Yıldıztaş - 200326017
-# Buket Çalkan - 210326369
-# Meryem Ceren Terzi - 200326089
-
-```
 
 ```{r}
 # Proje için Kaggle.com üzerinden Hindistan’daki eyaletlere göre Covid - 19 verilerini sunan “Covid - 19 India” veri seti çekilmiştik. Kullanım kolaylığı için veri setinin ismi “covid” olarak değiştirildi.
